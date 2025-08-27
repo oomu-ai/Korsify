@@ -1,187 +1,122 @@
-# 🚀 Korsify Google Cloud Migration - Start Here
+# Korsify GCP Migration Guide - Efficient Path
 
-## Prerequisites Checklist
-Before starting, ensure you have:
-- [ ] A Google account
-- [ ] Credit card for billing (you get $300 free credits)
-- [ ] 30-60 minutes for the migration
-- [ ] Access to your current database
+## Quick Start - 6 Step Migration Process
 
-## Step 0: Install Google Cloud CLI
+### Prerequisites
+- GCP Project: `korsify-app` (already set up)
+- `gcloud` CLI installed and authenticated
+- Docker installed locally
 
-### For Windows:
-1. Download installer: https://cloud.google.com/sdk/docs/install
-2. Run the installer and follow prompts
-3. Open a new Command Prompt/PowerShell
+## Phase 1: Database Migration (15 minutes)
 
-### For Mac:
+### Step 1: Export from Neon Database
 ```bash
-brew install --cask google-cloud-sdk
+# Run from project root
+pg_dump $DATABASE_URL > backup.sql
 ```
 
-### For Linux:
+### Step 2: Create Cloud SQL Instance
 ```bash
-curl https://sdk.cloud.google.com | bash
-exec -l $SHELL
+gcloud sql instances create korsify-db \
+  --database-version=POSTGRES_15 \
+  --tier=db-f1-micro \
+  --region=us-central1 \
+  --network=default \
+  --no-backup \
+  --database-flags=max_connections=100
 ```
 
-### Verify Installation:
+### Step 3: Import Data
 ```bash
-gcloud --version
+gcloud sql import sql korsify-db gs://korsify-backup/backup.sql \
+  --database=korsify
 ```
 
-## Step 1: Initial Setup
+## Phase 2: Container Preparation (10 minutes)
 
-1. **Login to Google Cloud:**
+### Step 4: Build & Push Docker Image
 ```bash
-gcloud auth login
+# Build optimized container
+docker build -t gcr.io/korsify-app/korsify:latest .
+
+# Push to GCR
+docker push gcr.io/korsify-app/korsify:latest
 ```
 
-2. **Verify Your Existing Project:**
-   - Your existing project: **korsify-app**
-   - Go to: https://console.cloud.google.com
-   - Make sure billing is enabled (required for resources)
+## Phase 3: Deploy to Cloud Run (5 minutes)
 
-3. **Run Setup Script:**
+### Step 5: Deploy Application
 ```bash
-cd migration
-chmod +x *.sh
-./step1-gcp-setup.sh
-```
-This will:
-- Configure your existing korsify-app project
-- Enable required APIs
-- Create Cloud SQL database
-- Set up storage buckets
-
-**⏱️ Time: 15 minutes**
-
-## Step 2: Prepare Your Code
-
-```bash
-./step2-prepare-code.sh
-```
-This creates:
-- Dockerfile for containerization
-- Cloud Build configuration
-- Production environment files
-
-**⏱️ Time: 2 minutes**
-
-## Step 3: Migrate Database
-
-```bash
-./step3-database-migration.sh
-```
-You'll need:
-- Your current database connection details
-- Database will be backed up first
-- Then imported to Cloud SQL
-
-**⏱️ Time: 10-20 minutes**
-
-## Step 4: Deploy Backend
-
-```bash
-./step4-deploy-backend.sh
-```
-You'll be asked for:
-- Your GEMINI_API_KEY
-- JWT_SECRET (or one will be generated)
-
-**⏱️ Time: 10 minutes**
-
-## Step 5: Deploy Frontend
-
-```bash
-./step5-deploy-frontend.sh
-```
-This will:
-- Build your React app
-- Upload to Cloud Storage
-- Set up CDN
-
-**⏱️ Time: 10 minutes**
-
-## Step 6: Verify Everything
-
-```bash
-./step6-final-checks.sh
-```
-This runs health checks on all components.
-
-**⏱️ Time: 2 minutes**
-
-## Quick Start Commands
-
-If you want to run everything at once:
-```bash
-# Make scripts executable
-chmod +x migration/*.sh
-
-# Run all steps
-cd migration
-./step1-gcp-setup.sh && \
-./step2-prepare-code.sh && \
-./step3-database-migration.sh && \
-./step4-deploy-backend.sh && \
-./step5-deploy-frontend.sh && \
-./step6-final-checks.sh
+gcloud run deploy korsify \
+  --image gcr.io/korsify-app/korsify:latest \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --add-cloudsql-instances korsify-app:us-central1:korsify-db \
+  --set-env-vars="NODE_ENV=production" \
+  --set-secrets="DATABASE_URL=database-url:latest,GEMINI_API_KEY=gemini-api-key:latest" \
+  --memory=1Gi \
+  --cpu=1 \
+  --max-instances=10 \
+  --min-instances=0
 ```
 
-## What You'll Need to Provide
+## Phase 4: Storage Setup (5 minutes)
 
-### During Step 1:
-- Link your billing account (in browser)
-
-### During Step 3 (Database):
-- Current database host (probably localhost)
-- Database name (probably korsify)
-- Database username
-
-### During Step 4 (Backend):
-- GEMINI_API_KEY
-- JWT_SECRET (optional, can be generated)
-
-## Troubleshooting
-
-### If database connection fails:
+### Step 6: Create Storage Bucket
 ```bash
-# Check if database is accessible
-gcloud sql instances describe korsify-db
+gsutil mb -p korsify-app -c standard -l us-central1 gs://korsify-documents/
+gsutil iam ch allUsers:objectViewer gs://korsify-documents/public/
 ```
 
-### If deployment fails:
+## Total Migration Time: ~35 minutes
+
+## Environment Variables to Set in Secret Manager
+
 ```bash
-# Check Cloud Run logs
-gcloud logs read --project=YOUR_PROJECT_ID
+# Create secrets
+echo -n "postgresql://user:pass@/korsify?host=/cloudsql/korsify-app:us-central1:korsify-db" | \
+  gcloud secrets create database-url --data-file=-
+
+echo -n "your-gemini-api-key" | \
+  gcloud secrets create gemini-api-key --data-file=-
+
+echo -n "your-jwt-secret" | \
+  gcloud secrets create jwt-secret --data-file=-
 ```
 
-### If frontend doesn't load:
+## Cost Optimization Tips
+
+1. **Use Cloud Run min-instances=0** - No charges when idle
+2. **Start with db-f1-micro** - Upgrade only if needed ($9.37/month)
+3. **Enable Cloud CDN** for static assets
+4. **Use Spot VMs** if using Compute Engine
+
+## Monitoring Setup
+
 ```bash
-# Check if files uploaded
-gsutil ls gs://YOUR_PROJECT_ID-static/
+# Enable APIs
+gcloud services enable monitoring.googleapis.com
+gcloud services enable logging.googleapis.com
+
+# Create alerts
+gcloud alpha monitoring policies create \
+  --notification-channels=your-channel-id \
+  --display-name="High Error Rate" \
+  --condition="rate(logging.googleapis.com/user/korsify-errors[1m]) > 10"
 ```
 
-## After Migration
+## Quick Rollback Plan
 
-1. **Update DNS** (if you have a domain)
-2. **Test all features**
-3. **Monitor costs** in GCP Console
-4. **Set up backups** (automated by default)
+If issues occur:
+```bash
+# Rollback to previous Cloud Run revision
+gcloud run revisions list --service=korsify
+gcloud run services update-traffic korsify --to-revisions=korsify-00001-abc=100
+```
 
-## Support
-
-- Google Cloud Console: https://console.cloud.google.com
-- View logs: https://console.cloud.google.com/logs
-- Monitor costs: https://console.cloud.google.com/billing
-
-## Estimated Costs
-
-- **During migration**: ~$0 (covered by free tier)
-- **Monthly after**: $10-45 depending on usage
-- **Free credits**: $300 (lasts 2-6 months typically)
-
----
-
-Ready? Start with Step 0 (Install Google Cloud CLI) above! 🎯
+## Next Files to Check:
+1. `step1-gcp-setup.sh` - Automated GCP resource creation
+2. `step2-prepare-code.sh` - Code modifications for GCP
+3. `Dockerfile` - Optimized container configuration
+4. `cloudbuild.yaml` - CI/CD pipeline setup

@@ -1,146 +1,129 @@
 #!/bin/bash
+# Code Preparation Script - Modifies code for GCP compatibility
+set -e
 
-# Korsify GCP Migration - Step 2: Prepare Code for Deployment
-echo "========================================="
-echo "Step 2: Preparing Code for GCP"
-echo "========================================="
+echo "🔧 Preparing code for GCP deployment..."
 
-# Load configuration
-source migration-config.env
-
-echo "1. Creating production environment file..."
-cat > .env.production << EOF
+# Create production environment file
+cat > .env.production << 'EOF'
 NODE_ENV=production
 PORT=8080
-DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@/${DB_NAME}?host=/cloudsql/${PROJECT_ID}:${REGION}:${DB_INSTANCE}
-GOOGLE_CLOUD_BUCKET=${UPLOADS_BUCKET}
-GEMINI_API_KEY=\${GEMINI_API_KEY}
-JWT_SECRET=\${JWT_SECRET}
+GCP_PROJECT_ID=korsify-app
+STORAGE_BUCKET=korsify-documents
 EOF
 
-echo "2. Creating Dockerfile..."
+# Create optimized Dockerfile
 cat > Dockerfile << 'EOF'
-FROM node:18-alpine
-
-# Install PostgreSQL client and build tools
-RUN apk add --no-cache postgresql-client python3 make g++
+# Multi-stage build for smaller image
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 COPY tsconfig.json ./
+COPY vite.config.ts ./
 
-# Install all dependencies (including dev for build)
+# Install all dependencies
 RUN npm ci
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN npm run build || echo "No build script, using source directly"
+RUN npm run build
 
-# Remove dev dependencies
+# Production stage
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy built application
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/migrations ./migrations
+
+# Install production dependencies only
 RUN npm prune --production
 
-# Create necessary directories
-RUN mkdir -p uploads
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+USER nodejs
 
-# Cloud Run expects port 8080
-ENV PORT=8080
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:8080/api/health', (r) => {r.statusCode === 200 ? process.exit(0) : process.exit(1)})"
+
 EXPOSE 8080
 
-# Start the application
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]
 EOF
 
-echo "3. Creating .dockerignore..."
+# Create .dockerignore
 cat > .dockerignore << 'EOF'
 node_modules
 .git
 .gitignore
-*.md
-.env
-.env.local
-.env.development
-dist
-build
-coverage
+README.md
+.env*
 .vscode
 .idea
+coverage
+.nyc_output
+.DS_Store
 *.log
-migration/
-uploads/
+test*
+attached_assets
+migration
+*.sql
+backup*
 EOF
 
-echo "4. Creating Cloud Build configuration..."
-cat > cloudbuild.yaml << EOF
+# Create Cloud Build configuration
+cat > cloudbuild.yaml << 'EOF'
 steps:
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/${PROJECT_ID}/korsify-backend:latest', '.']
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/korsify:$COMMIT_SHA', '.']
   
-  # Push to Container Registry
+  # Push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/${PROJECT_ID}/korsify-backend:latest']
+    args: ['push', 'gcr.io/$PROJECT_ID/korsify:$COMMIT_SHA']
   
   # Deploy to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
+  - name: 'gcr.io/cloud-builders/gcloud'
     args:
-    - 'run'
-    - 'deploy'
-    - 'korsify-backend'
-    - '--image'
-    - 'gcr.io/${PROJECT_ID}/korsify-backend:latest'
-    - '--region'
-    - '${REGION}'
-    - '--platform'
-    - 'managed'
-    - '--allow-unauthenticated'
-    - '--add-cloudsql-instances'
-    - '${PROJECT_ID}:${REGION}:${DB_INSTANCE}'
-    - '--set-env-vars'
-    - 'NODE_ENV=production,PORT=8080,GOOGLE_CLOUD_BUCKET=${UPLOADS_BUCKET}'
-    - '--set-secrets'
-    - 'GEMINI_API_KEY=GEMINI_API_KEY:latest,JWT_SECRET=JWT_SECRET:latest,DATABASE_URL=DATABASE_URL:latest'
-    - '--memory'
-    - '1Gi'
-    - '--cpu'
-    - '1'
-    - '--timeout'
-    - '300'
-    - '--min-instances'
-    - '0'
-    - '--max-instances'
-    - '10'
+      - 'run'
+      - 'deploy'
+      - 'korsify'
+      - '--image=gcr.io/$PROJECT_ID/korsify:$COMMIT_SHA'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--service-account=korsify-sa@$PROJECT_ID.iam.gserviceaccount.com'
+      - '--add-cloudsql-instances=$PROJECT_ID:us-central1:korsify-db'
+      - '--set-secrets=DATABASE_URL=database-url:latest,GEMINI_API_KEY=gemini-api-key:latest,JWT_SECRET=jwt-secret:latest'
+      - '--set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=$PROJECT_ID,STORAGE_BUCKET=korsify-documents'
+      - '--memory=1Gi'
+      - '--cpu=1'
+      - '--timeout=300'
+      - '--max-instances=10'
+      - '--min-instances=0'
 
 images:
-- gcr.io/${PROJECT_ID}/korsify-backend:latest
+  - 'gcr.io/$PROJECT_ID/korsify:$COMMIT_SHA'
+
+timeout: '1200s'
 EOF
 
-echo "5. Creating package.json scripts update..."
-cat > update-package.json << 'EOF'
-// Add this to your package.json scripts section:
-"scripts": {
-  "start": "node server/index.js",
-  "build": "tsc",
-  "deploy": "gcloud builds submit --config cloudbuild.yaml"
-}
-EOF
-
+echo "✅ Code preparation complete!"
 echo ""
-echo "========================================="
-echo "Code Preparation Complete!"
-echo "========================================="
+echo "📝 Created files:"
+echo "  - Dockerfile (optimized multi-stage build)"
+echo "  - .dockerignore (exclude unnecessary files)"
+echo "  - cloudbuild.yaml (CI/CD pipeline)"
+echo "  - .env.production (environment config)"
 echo ""
-echo "Files created:"
-echo "- .env.production (environment variables)"
-echo "- Dockerfile (container configuration)"
-echo "- .dockerignore (files to exclude)"
-echo "- cloudbuild.yaml (deployment configuration)"
-echo ""
-echo "Next steps:"
-echo "1. Update your actual API keys in Secret Manager"
-echo "2. Run step3-database-migration.sh to migrate your database"
-echo "========================================="
+echo "Next: Run step3-database-migration.sh"

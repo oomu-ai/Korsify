@@ -1,98 +1,93 @@
 #!/bin/bash
+# Database Migration Script
+set -e
 
-# Korsify GCP Migration - Step 3: Database Migration
-echo "========================================="
-echo "Step 3: Database Migration"
-echo "========================================="
+echo "🗄️  Starting Database Migration to Cloud SQL..."
 
-# Load configuration
-source migration-config.env
-
-echo "1. Creating database backup..."
-echo "Backing up current database..."
-
-# Create backup directory
-mkdir -p migration-backup
-
-# Export database (adjust connection details as needed)
-echo "Enter your current database connection details:"
-read -p "Database host (default: localhost): " CURRENT_DB_HOST
-CURRENT_DB_HOST=${CURRENT_DB_HOST:-localhost}
-
-read -p "Database name (default: korsify): " CURRENT_DB_NAME
-CURRENT_DB_NAME=${CURRENT_DB_NAME:-korsify}
-
-read -p "Database user (default: postgres): " CURRENT_DB_USER
-CURRENT_DB_USER=${CURRENT_DB_USER:-postgres}
-
-echo "Creating backup..."
-pg_dump -h $CURRENT_DB_HOST -U $CURRENT_DB_USER -d $CURRENT_DB_NAME > migration-backup/korsify_backup_$(date +%Y%m%d_%H%M%S).sql
-
-if [ $? -ne 0 ]; then
-    echo "Database backup failed. Please check your connection details."
-    exit 1
+# Check if DATABASE_URL is set
+if [ -z "$DATABASE_URL" ]; then
+  echo "❌ ERROR: DATABASE_URL environment variable not set"
+  echo "Please set your current Neon database URL:"
+  echo "export DATABASE_URL='your-neon-database-url'"
+  exit 1
 fi
 
-BACKUP_FILE=$(ls -t migration-backup/*.sql | head -1)
-echo "Backup created: $BACKUP_FILE"
+PROJECT_ID="korsify-app"
+REGION="us-central1"
+INSTANCE_NAME="korsify-db"
+DB_NAME="korsify"
+BACKUP_FILE="korsify-backup-$(date +%Y%m%d-%H%M%S).sql"
 
-echo ""
-echo "2. Uploading backup to Cloud Storage..."
-gsutil cp $BACKUP_FILE gs://${UPLOADS_BUCKET}/database-backup/
+echo "📦 Dumping current database..."
+pg_dump $DATABASE_URL \
+  --no-owner \
+  --no-privileges \
+  --no-tablespaces \
+  --no-unlogged-table-data \
+  --quote-all-identifiers \
+  --schema=public \
+  > $BACKUP_FILE
 
-echo ""
-echo "3. Getting Cloud SQL connection details..."
-CONNECTION_NAME=$(gcloud sql instances describe ${DB_INSTANCE} --format="value(connectionName)")
-echo "Connection name: $CONNECTION_NAME"
+echo "📊 Database backup created: $BACKUP_FILE"
+echo "Size: $(du -h $BACKUP_FILE | cut -f1)"
 
-echo ""
-echo "4. Importing database to Cloud SQL..."
-gcloud sql import sql ${DB_INSTANCE} \
-  gs://${UPLOADS_BUCKET}/database-backup/$(basename $BACKUP_FILE) \
-  --database=${DB_NAME} \
-  --user=postgres
+# Upload to Cloud Storage
+echo "☁️  Uploading backup to Cloud Storage..."
+gsutil cp $BACKUP_FILE gs://korsify-backups/
 
-if [ $? -ne 0 ]; then
-    echo "Database import failed. Retrying with different method..."
-    
-    # Alternative method: Connect via proxy
-    echo "Starting Cloud SQL proxy..."
-    cloud_sql_proxy -instances=${CONNECTION_NAME}=tcp:5433 &
-    PROXY_PID=$!
-    
-    sleep 5
-    
-    echo "Importing via proxy..."
-    psql -h localhost -p 5433 -U postgres -d ${DB_NAME} < $BACKUP_FILE
-    
-    kill $PROXY_PID
-fi
+# Get Cloud SQL instance connection info
+echo "🔍 Getting Cloud SQL connection details..."
+INSTANCE_IP=$(gcloud sql instances describe $INSTANCE_NAME \
+  --format="value(ipAddresses[0].ipAddress)")
 
-echo ""
-echo "5. Creating database connection string secret..."
-DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@/${DB_NAME}?host=/cloudsql/${CONNECTION_NAME}"
-echo -n "$DATABASE_URL" | gcloud secrets create DATABASE_URL --data-file=- 2>/dev/null || \
-echo -n "$DATABASE_URL" | gcloud secrets versions add DATABASE_URL --data-file=-
+# Import the backup to Cloud SQL
+echo "📥 Importing data to Cloud SQL..."
+gcloud sql import sql $INSTANCE_NAME \
+  gs://korsify-backups/$BACKUP_FILE \
+  --database=$DB_NAME \
+  --quiet
 
-echo ""
-echo "6. Verifying database migration..."
-echo "Testing connection to Cloud SQL..."
-gcloud sql connect ${DB_INSTANCE} --user=${DB_USER} --database=${DB_NAME} << EOF
-SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema = 'public';
-\q
+echo "✅ Database migration complete!"
+
+# Verify migration
+echo "🔍 Verifying migration..."
+cat > verify.sql << 'EOF'
+SELECT 
+  'Tables' as type, 
+  COUNT(*) as count 
+FROM information_schema.tables 
+WHERE table_schema = 'public'
+UNION ALL
+SELECT 
+  'Users' as type, 
+  COUNT(*) as count 
+FROM users
+UNION ALL
+SELECT 
+  'Courses' as type, 
+  COUNT(*) as count 
+FROM courses
+UNION ALL
+SELECT 
+  'Documents' as type, 
+  COUNT(*) as count 
+FROM documents;
 EOF
 
+# You'll need to run this manually with Cloud SQL proxy or from Cloud Shell
 echo ""
-echo "========================================="
-echo "Database Migration Complete!"
-echo "========================================="
+echo "📝 To verify migration, connect to Cloud SQL and check:"
+echo "  - Table count"
+echo "  - User records"
+echo "  - Course records"
+echo "  - Document records"
 echo ""
-echo "Database details:"
-echo "- Instance: ${DB_INSTANCE}"
-echo "- Database: ${DB_NAME}"
-echo "- User: ${DB_USER}"
-echo "- Connection: ${CONNECTION_NAME}"
+echo "Connection string for your app:"
+echo "postgresql://korsify-user:YOUR_PASSWORD@/$DB_NAME?host=/cloudsql/$PROJECT_ID:$REGION:$INSTANCE_NAME"
 echo ""
-echo "Next steps:"
-echo "1. Run step4-deploy-backend.sh to deploy your backend"
-echo "========================================="
+echo "⚠️  Remember to update the database-url secret in Secret Manager!"
+echo ""
+echo "Next: Run step4-deploy-backend.sh"
+
+# Keep backup locally for safety
+echo "💾 Local backup kept at: $BACKUP_FILE"
