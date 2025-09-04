@@ -29,7 +29,6 @@ export default function SimpleCourseCreationDialog({
   const [courseDescription, setCourseDescription] = useState("");
   const [difficultyLevel, setDifficultyLevel] = useState<'beginner' | 'intermediate' | 'advanced' | 'expert'>('beginner');
   const [targetAudience, setTargetAudience] = useState("");
-  const [language, setLanguage] = useState("English");
 
 
   const handleCreateCourse = async () => {
@@ -56,7 +55,6 @@ export default function SimpleCourseCreationDialog({
           description: courseDescription || `A comprehensive ${difficultyLevel} level course`,
           difficultyLevel,
           targetAudience: targetAudience || 'General learners',
-          language: language || 'English',
           status: 'draft'
         })
       });
@@ -94,7 +92,6 @@ export default function SimpleCourseCreationDialog({
     setCourseDescription("");
     setDifficultyLevel('beginner');
     setTargetAudience("");
-    setLanguage("English");
   };
 
   const handleClose = () => {
@@ -141,60 +138,39 @@ export default function SimpleCourseCreationDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="difficulty">Difficulty Level</Label>
-                <Select value={difficultyLevel} onValueChange={(value: any) => setDifficultyLevel(value)}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="beginner">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        Beginner
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="intermediate">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                        Intermediate
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="advanced">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                        Advanced
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="expert">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                        Expert
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="language">Language</Label>
-                <Select value={language} onValueChange={setLanguage}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="English">English</SelectItem>
-                    <SelectItem value="Spanish">Spanish</SelectItem>
-                    <SelectItem value="French">French</SelectItem>
-                    <SelectItem value="German">German</SelectItem>
-                    <SelectItem value="Portuguese">Portuguese</SelectItem>
-                    <SelectItem value="Chinese">Chinese</SelectItem>
-                    <SelectItem value="Japanese">Japanese</SelectItem>
-                    <SelectItem value="Korean">Korean</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <Label htmlFor="difficulty">Difficulty Level</Label>
+              <Select value={difficultyLevel} onValueChange={(value: any) => setDifficultyLevel(value)}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="beginner">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      Beginner
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="intermediate">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                      Intermediate
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="advanced">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                      Advanced
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="expert">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                      Expert
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
