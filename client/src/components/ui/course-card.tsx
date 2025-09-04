@@ -27,7 +27,7 @@ interface Course {
   status: 'draft' | 'processing' | 'published';
   language?: string;
   targetAudience?: string;
-  difficultyLevel?: 'beginner' | 'intermediate' | 'advanced';
+  difficultyLevel?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
   estimatedDuration?: number;
   enrollmentCount?: number;
   rating?: number;
@@ -69,6 +69,8 @@ export default function CourseCard({
         return 'bg-yellow-100 text-yellow-800';
       case 'advanced':
         return 'bg-red-100 text-red-800';
+      case 'expert':
+        return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }

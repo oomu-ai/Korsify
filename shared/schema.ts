@@ -76,7 +76,7 @@ export const courseTemplates = pgTable("course_templates", {
   category: varchar("category").notNull(), // e.g., 'business', 'technology', 'education', 'health'
   tags: jsonb("tags").$type<string[]>().default([]),
   thumbnailUrl: varchar("thumbnail_url"),
-  difficultyLevel: varchar("difficulty_level", { enum: ['beginner', 'intermediate', 'advanced'] }).default('beginner'),
+  difficultyLevel: varchar("difficulty_level", { enum: ['beginner', 'intermediate', 'advanced', 'expert'] }).default('beginner'),
   estimatedDuration: integer("estimated_duration"), // in minutes
   structure: jsonb("structure").notNull(), // Course outline structure
   isActive: boolean("is_active").default(true),
@@ -94,7 +94,7 @@ export const courses = pgTable("courses", {
   language: varchar("language").default('en'),
   targetAudience: varchar("target_audience"),
   contentFocus: varchar("content_focus"),
-  difficultyLevel: varchar("difficulty_level", { enum: ['beginner', 'intermediate', 'advanced'] }).default('beginner'),
+  difficultyLevel: varchar("difficulty_level", { enum: ['beginner', 'intermediate', 'advanced', 'expert'] }).default('beginner'),
   estimatedDuration: integer("estimated_duration"), // in minutes
   thumbnailUrl: varchar("thumbnail_url"),
   rating: real("rating").default(0),

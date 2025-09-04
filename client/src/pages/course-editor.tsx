@@ -100,7 +100,7 @@ export default function CourseEditor() {
   const [courseTitle, setCourseTitle] = useState("");
   const [courseDescription, setCourseDescription] = useState("");
   const [coverImage, setCoverImage] = useState<string | null>(null);
-  const [difficultyLevel, setDifficultyLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
+  const [difficultyLevel, setDifficultyLevel] = useState<'beginner' | 'intermediate' | 'advanced' | 'expert'>('beginner');
 
   // Fetch course data
   const { data: course, isLoading: courseLoading, refetch: refetchCourse } = useQuery<CourseWithDetails>({
@@ -605,7 +605,7 @@ export default function CourseEditor() {
                 
                 <div>
                   <label className="text-sm font-medium mb-2 block">Difficulty Level</label>
-                  <Select value={difficultyLevel} onValueChange={(value: 'beginner' | 'intermediate' | 'advanced') => setDifficultyLevel(value)}>
+                  <Select value={difficultyLevel} onValueChange={(value: 'beginner' | 'intermediate' | 'advanced' | 'expert') => setDifficultyLevel(value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select difficulty level" />
                     </SelectTrigger>
@@ -626,6 +626,12 @@ export default function CourseEditor() {
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full bg-red-500"></div>
                           Advanced
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="expert">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                          Expert
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -1024,7 +1030,7 @@ export default function CourseEditor() {
                               Processing
                             </Badge>
                           )}
-                          {(doc.status === 'completed' || doc.status === 'processed') && (
+                          {doc.status === 'completed' && (
                             <Badge variant="default" className="bg-green-100 text-green-700">
                               <CheckCircle className="w-3 h-3 mr-1" />
                               Processed
@@ -1071,34 +1077,41 @@ export default function CourseEditor() {
               </CardContent>
             </Card>
 
-            {/* AI Module Generation Card */}
-            <Card className="bg-amber-50 border-amber-200">
+            {/* Create New Course Card */}
+            <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Sparkles className="w-5 h-5 text-amber-600" />
-                    <CardTitle className="text-amber-900">AI Module Generation</CardTitle>
+                    <Plus className="w-5 h-5 text-blue-600" />
+                    <CardTitle className="text-blue-900">Create New Course</CardTitle>
                   </div>
                   <Button 
                     size="sm" 
-                    className="bg-amber-600 hover:bg-amber-700"
+                    className="bg-blue-600 hover:bg-blue-700"
                     onClick={() => setShowAiGeneration(true)}
                     disabled={courseDocuments.length === 0}
                   >
-                    Generate Modules
+                    Create from Documents
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-amber-800">
-                  Use World Class Fine-Tuned AI to automatically generate modules and lessons from your uploaded documents. 
-                  The AI will analyze document content and create a structured learning experience for your students.
+                <p className="text-blue-800 mb-4">
+                  Upload your documents to generate a complete course structure. The system will analyze your content 
+                  and create organized modules, lessons, and quizzes for your students.
                 </p>
-                {courseDocuments.length > 0 && (
-                  <div className="bg-amber-100 rounded p-3 mt-3">
-                    <p className="text-sm text-amber-900">
+                {courseDocuments.length > 0 ? (
+                  <div className="bg-blue-100 rounded p-3">
+                    <p className="text-sm text-blue-900">
                       <CheckCircle className="w-4 h-4 inline mr-1" />
-                      {courseDocuments.length} document{courseDocuments.length > 1 ? 's' : ''} ready for AI generation
+                      {courseDocuments.length} document{courseDocuments.length > 1 ? 's' : ''} uploaded and ready
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded p-3">
+                    <p className="text-sm text-gray-600">
+                      <Upload className="w-4 h-4 inline mr-1" />
+                      Upload documents above to get started
                     </p>
                   </div>
                 )}
