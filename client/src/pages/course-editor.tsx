@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import Navigation from "@/components/navigation";
 import AiGenerationDialog from "@/components/ai-generation-dialog";
+import SimpleCourseCreationDialog from "@/components/simple-course-creation-dialog";
 import { SourceViewer } from "@/components/source-viewer";
 import { CitationRenderer } from "@/components/citation-renderer";
 import RichTextViewer from "@/components/rich-text-viewer";
@@ -75,6 +76,7 @@ export default function CourseEditor() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("details");
   const [showAiGeneration, setShowAiGeneration] = useState(false);
+  const [showSimpleCourseCreation, setShowSimpleCourseCreation] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showDocumentSelector, setShowDocumentSelector] = useState(false);
@@ -1088,10 +1090,9 @@ export default function CourseEditor() {
                   <Button 
                     size="sm" 
                     className="bg-blue-600 hover:bg-blue-700"
-                    onClick={() => setShowAiGeneration(true)}
-                    disabled={courseDocuments.length === 0}
+                    onClick={() => setShowSimpleCourseCreation(true)}
                   >
-                    Create from Documents
+                    Create Course
                   </Button>
                 </div>
               </CardHeader>
@@ -1157,6 +1158,13 @@ export default function CourseEditor() {
             }}
           />
         )}
+
+        {/* Simple Course Creation Dialog */}
+        <SimpleCourseCreationDialog
+          open={showSimpleCourseCreation}
+          onClose={() => setShowSimpleCourseCreation(false)}
+          courseDocuments={courseDocuments}
+        />
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
