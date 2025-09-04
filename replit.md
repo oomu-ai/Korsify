@@ -6,16 +6,7 @@ Korsify is an AI-powered educational platform designed to transform documents in
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (Updated: 2025-09-04 02:10 AM)
-- **Expert Difficulty Level**: Added a fourth difficulty level "Expert" to the course system:
-  - Added expert option with purple color scheme to course editor dropdown
-  - Updated CourseCard component to display expert courses with purple badge
-  - Maintained consistent visual hierarchy across all four difficulty levels
-- **Documents Tab UI Redesign**: Simplified the Documents interface in the course editor:
-  - Removed "AI Module Generation" section with amber styling
-  - Replaced with cleaner "Create New Course" section with blue-to-purple gradient
-  - Updated messaging to focus on document upload and course creation workflow
-  - Added helpful status indicators for uploaded documents
+## Recent Changes (Updated: 2025-08-27 12:30 AM)
 - **GCP Migration Package**: Created comprehensive migration toolkit for moving from Replit to Google Cloud Platform:
   - 6-step automated migration process taking ~35 minutes total
   - Bash scripts for each migration phase (setup, code prep, database, deployment, verification)

@@ -19,7 +19,7 @@ import FileUpload from "@/components/ui/file-upload";
 import ProgressIndicator from "@/components/ui/progress-indicator";
 import CourseCard from "@/components/ui/course-card";
 import TemplateGallery from "@/components/ui/template-gallery";
-import SimpleCourseCreationDialog from "@/components/simple-course-creation-dialog";
+import CreateCourseDialog from "@/components/ui/create-course-dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -45,7 +45,7 @@ export default function CreatorDashboard() {
   const queryClient = useQueryClient();
   const [uploadingFile, setUploadingFile] = useState<File | null>(null);
   const [processingJobId, setProcessingJobId] = useState<string | null>(null);
-  const [showSimpleCourseCreation, setShowSimpleCourseCreation] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
 
@@ -174,7 +174,7 @@ export default function CreatorDashboard() {
   };
 
   const handleCreateCourse = () => {
-    setShowSimpleCourseCreation(true);
+    setShowCreateDialog(true);
   };
 
   const handleGenerateCourse = (documentId: string) => {
@@ -215,10 +215,7 @@ export default function CreatorDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      <SimpleCourseCreationDialog 
-        open={showSimpleCourseCreation} 
-        onClose={() => setShowSimpleCourseCreation(false)}
-      />
+      <CreateCourseDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
