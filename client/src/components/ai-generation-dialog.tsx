@@ -108,6 +108,7 @@ export default function AiGenerationDialog({
   
   // Customization options state
   const [customOptions, setCustomOptions] = useState({
+    aiModel: 'gemini', // 'gemini' or 'korsify'
     difficultyLevel: 'beginner',
     moduleCount: 3, // Number of modules to generate (1-10)
     generateQuizzes: true,
@@ -265,6 +266,80 @@ export default function AiGenerationDialog({
                       </Button>
                     </div>
                     
+                    {/* Model Selection */}
+                    <div className="space-y-3">
+                      <Label className="text-base font-semibold">AI Model Selection</Label>
+                      <div className="grid grid-cols-1 gap-3">
+                        <div 
+                          className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
+                            customOptions.aiModel === 'gemini' 
+                              ? 'border-primary bg-primary/5' 
+                              : 'border-gray-300 hover:border-gray-400'
+                          }`}
+                          onClick={() => setCustomOptions({...customOptions, aiModel: 'gemini'})}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="pt-1">
+                              <div className={`w-4 h-4 rounded-full border-2 ${
+                                customOptions.aiModel === 'gemini'
+                                  ? 'border-primary bg-primary'
+                                  : 'border-gray-400'
+                              }`}>
+                                {customOptions.aiModel === 'gemini' && (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <div className="w-2 h-2 rounded-full bg-white" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-semibold">Google Gemini</span>
+                                <Badge variant="secondary" className="text-xs">Current</Badge>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                Fast, general-purpose AI model. Excellent for diverse educational content with reliable performance.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div 
+                          className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
+                            customOptions.aiModel === 'korsify' 
+                              ? 'border-primary bg-primary/5' 
+                              : 'border-gray-300 hover:border-gray-400'
+                          }`}
+                          onClick={() => setCustomOptions({...customOptions, aiModel: 'korsify'})}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="pt-1">
+                              <div className={`w-4 h-4 rounded-full border-2 ${
+                                customOptions.aiModel === 'korsify'
+                                  ? 'border-primary bg-primary'
+                                  : 'border-gray-400'
+                              }`}>
+                                {customOptions.aiModel === 'korsify' && (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <div className="w-2 h-2 rounded-full bg-white" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-semibold">Korsify AI</span>
+                                <Badge variant="outline" className="text-xs text-purple-600 border-purple-600">Premium</Badge>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                World's best instructional design specialized model. Optimized for creating exceptional educational experiences.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
                     {/* Difficulty Level */}
                     <div className="space-y-2">
                       <Label htmlFor="difficulty">Difficulty Level</Label>
@@ -393,6 +468,7 @@ export default function AiGenerationDialog({
                         size="sm"
                         onClick={() => {
                           setCustomOptions({
+                            aiModel: 'gemini',
                             difficultyLevel: 'beginner',
                             moduleCount: 3,
                             generateQuizzes: true,
@@ -430,6 +506,12 @@ export default function AiGenerationDialog({
                       </Button>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-gray-500">AI Model:</span>
+                        <Badge variant={customOptions.aiModel === 'korsify' ? 'outline' : 'secondary'} className={`ml-2 ${customOptions.aiModel === 'korsify' ? 'text-purple-600 border-purple-600' : ''}`}>
+                          {customOptions.aiModel === 'gemini' ? 'Gemini' : 'Korsify AI'}
+                        </Badge>
+                      </div>
                       <div>
                         <span className="text-gray-500">Difficulty:</span>
                         <Badge variant="secondary" className="ml-2 capitalize">{customOptions.difficultyLevel}</Badge>

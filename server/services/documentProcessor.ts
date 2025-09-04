@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { geminiService, type AIGenerationOptions } from './gemini';
+import { AIServiceFactory } from './aiServiceFactory';
 import { storage } from '../storage';
 import type { InsertCourse, InsertModule, InsertLesson, InsertQuiz, SourceReference } from '@shared/schema';
 import { validateCourseStructure, cleanCourseStructure, generateUniqueTitle, isTitleDuplicate } from '../utils/deduplication';
@@ -65,7 +66,7 @@ export class DocumentProcessor {
         await this.updateJobPhase(jobId, 'content_generation', 55, 'processing');
       }
       
-      let courseStructure = await geminiService.generateCourseStructure(
+      let courseStructure = await AIServiceFactory.generateCourseStructure(
         documentContent,
         document.fileName,
         options

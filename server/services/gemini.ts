@@ -1,6 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
+import { AIService } from './aiService.js';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || "";
+const ai = new GoogleGenAI({ apiKey });
 
 export interface CourseStructure {
   title: string;
@@ -30,6 +32,7 @@ export interface CourseStructure {
 }
 
 export interface AIGenerationOptions {
+  aiModel?: 'gemini' | 'korsify';
   language?: string;
   targetAudience?: string;
   contentFocus?: string;
@@ -42,7 +45,7 @@ export interface AIGenerationOptions {
   includeExamples?: boolean;
 }
 
-export class GeminiService {
+export class GeminiService implements AIService {
   private model = "gemini-2.5-flash";
 
   async analyzeDocument(content: string, fileName: string): Promise<string> {
