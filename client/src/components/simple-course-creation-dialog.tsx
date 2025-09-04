@@ -60,20 +60,29 @@ export default function SimpleCourseCreationDialog({
       });
 
       if (!courseResponse.ok) {
+        if (courseResponse.status === 401) {
+          toast({
+            title: "Not Authenticated",
+            description: "Please log in to create a course.",
+            variant: "destructive"
+          });
+          setIsLoading(false);
+          return;
+        }
         throw new Error('Failed to create course');
       }
 
       const course = await courseResponse.json();
 
+      // Immediately navigate to the course editor after successful creation
+      queryClient.invalidateQueries({ queryKey: ['/api/courses'] });
+      onClose();
+      setLocation(`/course-editor/${course.id}`);
+      
       toast({
         title: "Course Created!",
         description: "You can now add modules and lessons to your course.",
       });
-
-      // Navigate to the course editor
-      queryClient.invalidateQueries({ queryKey: ['/api/courses'] });
-      setLocation(`/course-editor/${course.id}`);
-      onClose();
 
     } catch (error) {
       console.error('Error creating course:', error);
