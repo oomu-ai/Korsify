@@ -29,10 +29,9 @@ import { Progress } from "@/components/ui/progress";
 interface CreateCourseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpgradeRequired?: (error: any) => void;
 }
 
-export default function CreateCourseDialog({ open, onOpenChange, onUpgradeRequired }: CreateCourseDialogProps) {
+export default function CreateCourseDialog({ open, onOpenChange }: CreateCourseDialogProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -63,13 +62,6 @@ export default function CreateCourseDialog({ open, onOpenChange, onUpgradeRequir
         tags: data.tags
       });
       const course = await courseResponse.json();
-      
-      // Check if there was an error
-      if (!courseResponse.ok) {
-        console.log('Course creation failed, response:', course);
-        console.log('requiresUpgrade flag:', course.requiresUpgrade);
-        throw course;
-      }
 
       // If document method, upload and process
       if (data.method === 'document' && data.documentFiles && data.documentFiles.length > 0) {
@@ -112,19 +104,12 @@ export default function CreateCourseDialog({ open, onOpenChange, onUpgradeRequir
       onOpenChange(false);
       setLocation(`/courses/${course.id}/edit`);
     },
-    onError: (error: any) => {
-      console.log('CreateCourseDialog error:', error);
-      if (error.requiresUpgrade && onUpgradeRequired) {
-        console.log('Calling onUpgradeRequired callback');
-        onUpgradeRequired(error);
-        onOpenChange(false);
-      } else {
-        toast({
-          title: "Failed to create course",
-          description: error.message || "Something went wrong",
-          variant: "destructive"
-        });
-      }
+    onError: (error) => {
+      toast({
+        title: "Failed to create course",
+        description: error.message || "Something went wrong",
+        variant: "destructive"
+      });
     }
   });
 

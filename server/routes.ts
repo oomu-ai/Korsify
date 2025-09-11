@@ -229,17 +229,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Document ID is required' });
       }
 
-      // Check if user can create a course (subscription limits)
-      const canCreate = await storage.canCreateCourse(req.user.id);
-      if (!canCreate.allowed) {
-        return res.status(403).json({ 
-          message: canCreate.reason,
-          requiresUpgrade: true,
-          coursesCreated: canCreate.coursesCreated,
-          limit: canCreate.limit
-        });
-      }
-
       // Start async processing
       const courseId = await documentProcessor.processDocument(
         documentId,
@@ -667,17 +656,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Template not found' });
       }
 
-      // Check if user can create a course (subscription limits)
-      const canCreate = await storage.canCreateCourse(req.user.id);
-      if (!canCreate.allowed) {
-        return res.status(403).json({ 
-          message: canCreate.reason,
-          requiresUpgrade: true,
-          coursesCreated: canCreate.coursesCreated,
-          limit: canCreate.limit
-        });
-      }
-
       const { title, targetAudience, difficultyLevel } = req.body;
 
       // Generate course structure from template
@@ -739,17 +717,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/templates/custom', async (req: any, res) => {
     try {
-      // Check if user can create a course (subscription limits)
-      const canCreate = await storage.canCreateCourse(req.user.id);
-      if (!canCreate.allowed) {
-        return res.status(403).json({ 
-          message: canCreate.reason,
-          requiresUpgrade: true,
-          coursesCreated: canCreate.coursesCreated,
-          limit: canCreate.limit
-        });
-      }
-
       const { title, description, category, difficultyLevel, targetAudience, estimatedDuration } = req.body;
 
       // Generate custom course structure
