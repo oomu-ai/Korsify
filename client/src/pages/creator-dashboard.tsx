@@ -247,15 +247,30 @@ export default function CreatorDashboard() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Creator Dashboard</h1>
             <p className="text-gray-600">Welcome back, {user?.firstName || 'Creator'}! Manage your courses and track performance.</p>
           </div>
-          <Button 
-            size="lg" 
-            className="mt-4 lg:mt-0"
-            onClick={handleCreateCourse}
-            disabled={createCourseMutation.isPending}
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Create New Course
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              size="lg" 
+              className="mt-4 lg:mt-0"
+              onClick={handleCreateCourse}
+              disabled={createCourseMutation.isPending}
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Create New Course
+            </Button>
+            {/* Test Button - Click to verify popup */}
+            <Button 
+              size="lg" 
+              variant="outline"
+              className="mt-4 lg:mt-0"
+              onClick={() => {
+                setUpgradeReason("Free tier users can only publish up to 3 courses. Upgrade to Pro for unlimited courses.");
+                setSubscriptionLimits({ currentUsage: 4, limit: 3 });
+                setShowUpgradePopup(true);
+              }}
+            >
+              Test Upgrade Popup
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
