@@ -50,190 +50,61 @@ import {
 import Navigation from "@/components/navigation";
 import type { User } from "@shared/schema";
 
-// Generate realistic mock data
-const generateMockData = () => {
-  // Revenue data for the last 12 months
-  const revenueData = [
-    { month: "Jan", revenue: 12450, students: 245 },
-    { month: "Feb", revenue: 15320, students: 312 },
-    { month: "Mar", revenue: 18740, students: 378 },
-    { month: "Apr", revenue: 22150, students: 445 },
-    { month: "May", revenue: 26890, students: 523 },
-    { month: "Jun", revenue: 31230, students: 612 },
-    { month: "Jul", revenue: 35670, students: 695 },
-    { month: "Aug", revenue: 39480, students: 778 },
-    { month: "Sep", revenue: 42150, students: 845 },
-    { month: "Oct", revenue: 45890, students: 912 },
-    { month: "Nov", revenue: 48320, students: 978 },
-    { month: "Dec", revenue: 52450, students: 1045 }
-  ];
-
-  // Student engagement data for the last 7 days
-  const engagementData = [
-    { day: "Mon", active: 234, completed: 45, enrolled: 23 },
-    { day: "Tue", active: 256, completed: 52, enrolled: 31 },
-    { day: "Wed", active: 289, completed: 48, enrolled: 28 },
-    { day: "Thu", active: 312, completed: 61, enrolled: 35 },
-    { day: "Fri", active: 345, completed: 72, enrolled: 42 },
-    { day: "Sat", active: 298, completed: 58, enrolled: 25 },
-    { day: "Sun", active: 267, completed: 49, enrolled: 19 }
-  ];
-
-  // Course performance data
-  const coursePerformance = [
-    {
-      id: "1",
-      title: "Advanced Machine Learning with Python",
-      students: 2456,
-      rating: 4.8,
-      revenue: 24560,
-      completionRate: 78,
-      avgProgress: 65,
-      totalLessons: 48,
-      totalQuizzes: 12,
-      avgQuizScore: 82
-    },
-    {
-      id: "2",
-      title: "Web Development Bootcamp 2024",
-      students: 1823,
-      rating: 4.7,
-      revenue: 18230,
-      completionRate: 82,
-      avgProgress: 71,
-      totalLessons: 36,
-      totalQuizzes: 8,
-      avgQuizScore: 78
-    },
-    {
-      id: "3",
-      title: "Data Science Fundamentals",
-      students: 1567,
-      rating: 4.9,
-      revenue: 15670,
-      completionRate: 85,
-      avgProgress: 79,
-      totalLessons: 28,
-      totalQuizzes: 10,
-      avgQuizScore: 85
-    },
-    {
-      id: "4",
-      title: "UI/UX Design Masterclass",
-      students: 1234,
-      rating: 4.6,
-      revenue: 12340,
-      completionRate: 72,
-      avgProgress: 58,
-      totalLessons: 32,
-      totalQuizzes: 6,
-      avgQuizScore: 75
-    },
-    {
-      id: "5",
-      title: "Cloud Architecture with AWS",
-      students: 987,
-      rating: 4.8,
-      revenue: 9870,
-      completionRate: 69,
-      avgProgress: 52,
-      totalLessons: 42,
-      totalQuizzes: 15,
-      avgQuizScore: 80
-    }
-  ];
-
-  // Student demographics
-  const demographics = [
-    { category: "18-24", value: 28, color: "#818CF8" },
-    { category: "25-34", value: 42, color: "#6366F1" },
-    { category: "35-44", value: 20, color: "#4F46E5" },
-    { category: "45+", value: 10, color: "#4338CA" }
-  ];
-
-  // Learning paths completion
-  const learningPaths = [
-    { path: "Beginner", completed: 456, inProgress: 234, notStarted: 89 },
-    { path: "Intermediate", completed: 312, inProgress: 198, notStarted: 67 },
-    { path: "Advanced", completed: 189, inProgress: 145, notStarted: 45 }
-  ];
-
-  // Recent student activities
-  const recentActivities = [
-    {
-      id: "1",
-      student: "John Doe",
-      avatar: null,
-      action: "completed",
-      course: "Advanced Machine Learning",
-      module: "Neural Networks",
-      time: "2 hours ago"
-    },
-    {
-      id: "2",
-      student: "Jane Smith",
-      avatar: null,
-      action: "enrolled",
-      course: "Web Development Bootcamp",
-      module: null,
-      time: "3 hours ago"
-    },
-    {
-      id: "3",
-      student: "Mike Johnson",
-      avatar: null,
-      action: "scored",
-      course: "Data Science Fundamentals",
-      module: "Statistical Analysis Quiz",
-      score: 95,
-      time: "5 hours ago"
-    },
-    {
-      id: "4",
-      student: "Sarah Williams",
-      avatar: null,
-      action: "completed",
-      course: "UI/UX Design Masterclass",
-      module: "Design Systems",
-      time: "8 hours ago"
-    },
-    {
-      id: "5",
-      student: "Robert Brown",
-      avatar: null,
-      action: "enrolled",
-      course: "Cloud Architecture with AWS",
-      module: null,
-      time: "1 day ago"
-    }
-  ];
-
-  return {
-    revenueData,
-    engagementData,
-    coursePerformance,
-    demographics,
-    learningPaths,
-    recentActivities
-  };
+// Helper function to calculate growth
+const calculateGrowth = (current: number, previous: number): string => {
+  if (previous === 0) return '0';
+  return ((current - previous) / previous * 100).toFixed(1);
 };
 
 export default function CreatorAnalytics() {
   const [, setLocation] = useLocation();
   const [timeRange, setTimeRange] = useState("30d");
   const [selectedCourse, setSelectedCourse] = useState("all");
-  const [mockData] = useState(generateMockData());
 
   // Check user authentication and role
-  const { data: user, isLoading } = useQuery<User>({
+  const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
   });
 
+  // Fetch analytics data
+  const { data: baseAnalytics, isLoading: baseLoading } = useQuery({
+    queryKey: ["/api/analytics/creator"],
+    enabled: !!user && user.currentRole === 'creator'
+  });
+
+  const { data: courseAnalytics, isLoading: coursesLoading } = useQuery({
+    queryKey: ["/api/analytics/creator/courses"],
+    enabled: !!user && user.currentRole === 'creator'
+  });
+
+  const { data: studentDemographics, isLoading: studentsLoading } = useQuery({
+    queryKey: ["/api/analytics/creator/students"],
+    enabled: !!user && user.currentRole === 'creator'
+  });
+
+  const { data: engagementMetrics, isLoading: engagementLoading } = useQuery({
+    queryKey: ["/api/analytics/creator/engagement"],
+    enabled: !!user && user.currentRole === 'creator'
+  });
+
+  const { data: revenueData, isLoading: revenueLoading } = useQuery({
+    queryKey: ["/api/analytics/creator/revenue", 12],
+    enabled: !!user && user.currentRole === 'creator'
+  });
+
+  const { data: recentActivities, isLoading: activitiesLoading } = useQuery({
+    queryKey: ["/api/analytics/creator/activities", 10],
+    enabled: !!user && user.currentRole === 'creator'
+  });
+
+  const isLoading = userLoading || baseLoading || coursesLoading || 
+                    studentsLoading || engagementLoading || revenueLoading || activitiesLoading;
+
   useEffect(() => {
-    if (!isLoading && (!user || user.currentRole !== 'creator')) {
+    if (!userLoading && (!user || user.currentRole !== 'creator')) {
       setLocation('/login');
     }
-  }, [user, isLoading, setLocation]);
+  }, [user, userLoading, setLocation]);
 
   if (isLoading) {
     return (
@@ -253,20 +124,18 @@ export default function CreatorAnalytics() {
     return null;
   }
 
-  // Calculate summary statistics
-  const totalRevenue = mockData.revenueData.reduce((sum, item) => sum + item.revenue, 0);
-  const totalStudents = mockData.coursePerformance.reduce((sum, course) => sum + course.students, 0);
-  const avgRating = (mockData.coursePerformance.reduce((sum, course) => sum + course.rating, 0) / mockData.coursePerformance.length).toFixed(1);
-  const avgCompletionRate = Math.round(mockData.coursePerformance.reduce((sum, course) => sum + course.completionRate, 0) / mockData.coursePerformance.length);
+  // Calculate summary statistics from real data
+  const totalRevenue = revenueData ? revenueData.reduce((sum: number, item: any) => sum + item.revenue, 0) : 0;
+  const totalStudents = baseAnalytics?.totalLearners || 0;
+  const avgRating = baseAnalytics?.averageRating?.toFixed(1) || '0.0';
+  const avgCompletionRate = Math.round(baseAnalytics?.completionRate || 0);
 
-  // Calculate growth rates
-  const currentMonthRevenue = mockData.revenueData[mockData.revenueData.length - 1].revenue;
-  const lastMonthRevenue = mockData.revenueData[mockData.revenueData.length - 2].revenue;
-  const revenueGrowth = ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100).toFixed(1);
-
-  const currentMonthStudents = mockData.revenueData[mockData.revenueData.length - 1].students;
-  const lastMonthStudents = mockData.revenueData[mockData.revenueData.length - 2].students;
-  const studentGrowth = ((currentMonthStudents - lastMonthStudents) / lastMonthStudents * 100).toFixed(1);
+  // Calculate growth rates from revenue data
+  const revenueGrowth = revenueData && revenueData.length >= 2 ?
+    calculateGrowth(revenueData[revenueData.length - 1].revenue, revenueData[revenueData.length - 2].revenue) : '0';
+  
+  const studentGrowth = revenueData && revenueData.length >= 2 ?
+    calculateGrowth(revenueData[revenueData.length - 1].students, revenueData[revenueData.length - 2].students) : '0';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -399,7 +268,7 @@ export default function CreatorAnalytics() {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={mockData.revenueData}>
+                    <AreaChart data={revenueData || []}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -418,7 +287,7 @@ export default function CreatorAnalytics() {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={mockData.revenueData}>
+                    <LineChart data={revenueData || []}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -438,12 +307,12 @@ export default function CreatorAnalytics() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockData.recentActivities.map((activity) => (
+                  {(recentActivities || []).map((activity: any) => (
                     <div key={activity.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-4">
                         <Avatar className="h-10 w-10">
                           <AvatarImage src={activity.avatar || undefined} />
-                          <AvatarFallback>{activity.student.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                          <AvatarFallback>{activity.student.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="text-sm font-medium text-gray-900">
@@ -495,7 +364,7 @@ export default function CreatorAnalytics() {
                       </tr>
                     </thead>
                     <tbody>
-                      {mockData.coursePerformance.map((course) => (
+                      {(courseAnalytics || []).map((course: any) => (
                         <tr key={course.id} className="border-b hover:bg-gray-50">
                           <td className="py-3 px-4">
                             <div>
@@ -511,7 +380,7 @@ export default function CreatorAnalytics() {
                           <td className="text-center py-3 px-4">
                             <div className="flex items-center justify-center">
                               <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
-                              <span className="text-sm">{course.rating}</span>
+                              <span className="text-sm">{course.rating.toFixed(1)}</span>
                             </div>
                           </td>
                           <td className="text-center py-3 px-4 font-medium">
@@ -519,19 +388,19 @@ export default function CreatorAnalytics() {
                           </td>
                           <td className="text-center py-3 px-4">
                             <div className="flex flex-col items-center">
-                              <span className="text-sm font-medium">{course.completionRate}%</span>
+                              <span className="text-sm font-medium">{Math.round(course.completionRate)}%</span>
                               <Progress value={course.completionRate} className="w-20 h-2 mt-1" />
                             </div>
                           </td>
                           <td className="text-center py-3 px-4">
                             <div className="flex flex-col items-center">
-                              <span className="text-sm font-medium">{course.avgProgress}%</span>
+                              <span className="text-sm font-medium">{Math.round(course.avgProgress)}%</span>
                               <Progress value={course.avgProgress} className="w-20 h-2 mt-1" />
                             </div>
                           </td>
                           <td className="text-center py-3 px-4">
                             <Badge variant={course.avgQuizScore >= 80 ? "default" : "secondary"}>
-                              {course.avgQuizScore}%
+                              {Math.round(course.avgQuizScore)}%
                             </Badge>
                           </td>
                           <td className="text-center py-3 px-4">
@@ -556,7 +425,7 @@ export default function CreatorAnalytics() {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={mockData.learningPaths}>
+                    <BarChart data={studentDemographics?.learningPaths || []}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="path" />
                       <YAxis />
@@ -635,7 +504,7 @@ export default function CreatorAnalytics() {
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
-                        data={mockData.demographics}
+                        data={studentDemographics?.ageGroups || []}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
@@ -644,7 +513,7 @@ export default function CreatorAnalytics() {
                         dataKey="value"
                         label={(entry) => `${entry.category}: ${entry.value}%`}
                       >
-                        {mockData.demographics.map((entry, index) => (
+                        {(studentDemographics?.ageGroups || []).map((entry: any, index: number) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -662,14 +531,7 @@ export default function CreatorAnalytics() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {[
-                      { country: "United States", students: 3456, percentage: 35 },
-                      { country: "India", students: 2134, percentage: 22 },
-                      { country: "United Kingdom", students: 1523, percentage: 15 },
-                      { country: "Canada", students: 987, percentage: 10 },
-                      { country: "Australia", students: 765, percentage: 8 },
-                      { country: "Others", students: 912, percentage: 10 }
-                    ].map((item) => (
+                    {(studentDemographics?.geographic || []).map((item: any) => (
                       <div key={item.country} className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           <span className="text-sm font-medium">{item.country}</span>
@@ -695,15 +557,15 @@ export default function CreatorAnalytics() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-primary">87%</div>
+                    <div className="text-3xl font-bold text-primary">{studentDemographics?.retentionRate || 0}%</div>
                     <p className="text-sm text-gray-600 mt-1">Monthly Retention Rate</p>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-green-600">$284</div>
+                    <div className="text-3xl font-bold text-green-600">${studentDemographics?.avgLifetimeValue || 0}</div>
                     <p className="text-sm text-gray-600 mt-1">Average Lifetime Value</p>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-purple-600">4.2</div>
+                    <div className="text-3xl font-bold text-purple-600">{studentDemographics?.avgCoursesPerStudent || 0}</div>
                     <p className="text-sm text-gray-600 mt-1">Courses per Student</p>
                   </div>
                 </div>
@@ -720,7 +582,7 @@ export default function CreatorAnalytics() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={mockData.engagementData}>
+                  <BarChart data={engagementMetrics?.weeklyData || []}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="day" />
                     <YAxis />
@@ -751,7 +613,7 @@ export default function CreatorAnalytics() {
                           <p className="text-xs text-gray-500">How long students stay engaged</p>
                         </div>
                       </div>
-                      <span className="text-lg font-bold">42 min</span>
+                      <span className="text-lg font-bold">{engagementMetrics?.metrics?.avgSessionDuration || 0} min</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
@@ -761,7 +623,7 @@ export default function CreatorAnalytics() {
                           <p className="text-xs text-gray-500">Percentage of videos watched fully</p>
                         </div>
                       </div>
-                      <span className="text-lg font-bold">68%</span>
+                      <span className="text-lg font-bold">{engagementMetrics?.metrics?.videoCompletionRate || 0}%</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
@@ -771,7 +633,7 @@ export default function CreatorAnalytics() {
                           <p className="text-xs text-gray-500">Students taking quizzes</p>
                         </div>
                       </div>
-                      <span className="text-lg font-bold">76%</span>
+                      <span className="text-lg font-bold">{engagementMetrics?.metrics?.quizParticipation || 0}%</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
@@ -781,7 +643,7 @@ export default function CreatorAnalytics() {
                           <p className="text-xs text-gray-500">Students active in last 7 days</p>
                         </div>
                       </div>
-                      <span className="text-lg font-bold">2,341</span>
+                      <span className="text-lg font-bold">{engagementMetrics?.metrics?.activeLearners || 0}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -795,12 +657,7 @@ export default function CreatorAnalytics() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {[
-                      { time: "9:00 AM - 12:00 PM", percentage: 85, label: "Morning Peak" },
-                      { time: "2:00 PM - 5:00 PM", percentage: 72, label: "Afternoon" },
-                      { time: "7:00 PM - 10:00 PM", percentage: 94, label: "Evening Peak" },
-                      { time: "10:00 PM - 12:00 AM", percentage: 45, label: "Late Night" }
-                    ].map((slot) => (
+                    {(engagementMetrics?.peakTimes || []).map((slot: any) => (
                       <div key={slot.time}>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-sm font-medium">{slot.time}</span>

@@ -912,6 +912,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Comprehensive Analytics Routes
+  app.get('/api/analytics/creator/courses', async (req: any, res) => {
+    try {
+      if (!req.user || req.user.currentRole !== 'creator') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      const courseAnalytics = await storage.getDetailedCourseAnalytics(req.user.id);
+      res.json(courseAnalytics);
+    } catch (error) {
+      console.error("Error fetching course analytics:", error);
+      res.status(500).json({ message: "Failed to fetch course analytics" });
+    }
+  });
+
+  app.get('/api/analytics/creator/students', async (req: any, res) => {
+    try {
+      if (!req.user || req.user.currentRole !== 'creator') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      const demographics = await storage.getStudentDemographics(req.user.id);
+      res.json(demographics);
+    } catch (error) {
+      console.error("Error fetching student demographics:", error);
+      res.status(500).json({ message: "Failed to fetch student demographics" });
+    }
+  });
+
+  app.get('/api/analytics/creator/engagement', async (req: any, res) => {
+    try {
+      if (!req.user || req.user.currentRole !== 'creator') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      const engagement = await storage.getEngagementMetrics(req.user.id);
+      res.json(engagement);
+    } catch (error) {
+      console.error("Error fetching engagement metrics:", error);
+      res.status(500).json({ message: "Failed to fetch engagement metrics" });
+    }
+  });
+
+  app.get('/api/analytics/creator/revenue', async (req: any, res) => {
+    try {
+      if (!req.user || req.user.currentRole !== 'creator') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      const months = parseInt(req.query.months as string) || 12;
+      const revenue = await storage.getRevenueAnalytics(req.user.id, months);
+      res.json(revenue);
+    } catch (error) {
+      console.error("Error fetching revenue analytics:", error);
+      res.status(500).json({ message: "Failed to fetch revenue analytics" });
+    }
+  });
+
+  app.get('/api/analytics/creator/activities', async (req: any, res) => {
+    try {
+      if (!req.user || req.user.currentRole !== 'creator') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      const limit = parseInt(req.query.limit as string) || 10;
+      const activities = await storage.getRecentStudentActivities(req.user.id, limit);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching recent activities:", error);
+      res.status(500).json({ message: "Failed to fetch recent activities" });
+    }
+  });
+
   app.get('/api/analytics/learner', async (req: any, res) => {
     try {
       const analytics = await storage.getLearnerAnalytics(req.user.id);
