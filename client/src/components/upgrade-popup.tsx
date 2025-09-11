@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Sparkles, Crown, Zap } from "lucide-react";
+import { Check, X, Sparkles, Crown, Zap, AlertCircle } from "lucide-react";
 import { useLocation } from "wouter";
 
 interface UpgradePopupProps {
@@ -11,7 +11,7 @@ interface UpgradePopupProps {
   reason: string;
   currentLimit?: number;
   currentUsage?: number;
-  feature: 'courses' | 'students';
+  feature?: 'courses' | 'students';
 }
 
 export default function UpgradePopup({ 
@@ -32,135 +32,105 @@ export default function UpgradePopup({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <div className="flex items-center justify-center mb-4">
-            <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full">
-              <Crown className="h-8 w-8 text-white" />
+      <DialogContent className="max-w-xl p-0 overflow-hidden">
+        {/* Error Message Banner */}
+        <div className="bg-red-50 border-b border-red-200 px-6 py-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-900">Upgrade Required</h3>
+              <p className="text-sm text-red-700 mt-1">{reason}</p>
+              {currentLimit && currentUsage && (
+                <p className="text-sm text-red-600 mt-2">
+                  You've used {currentUsage} out of {currentLimit} {feature === 'courses' ? 'published courses' : 'students per course'}
+                </p>
+              )}
             </div>
           </div>
-          <DialogTitle className="text-2xl text-center">Upgrade to Pro</DialogTitle>
-          <DialogDescription className="text-center text-base">
-            {reason}
-          </DialogDescription>
-        </DialogHeader>
+        </div>
 
-        {currentLimit && currentUsage && (
-          <div className="text-center my-4">
-            <div className="inline-flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2">
-              <Zap className="h-4 w-4 text-yellow-600" />
-              <span className="text-sm">
-                You've reached {currentUsage} out of {currentLimit} {feature === 'courses' ? 'courses' : 'students per course'} on Free tier
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div className="grid md:grid-cols-2 gap-4 mt-6">
-          {/* Free Plan */}
-          <Card className="relative border-gray-200">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">Free</h3>
-                  <p className="text-2xl font-bold mt-1">$0<span className="text-sm font-normal text-gray-600">/month</span></p>
-                </div>
-                <Badge variant="secondary">Current Plan</Badge>
-              </div>
-              
-              <ul className="space-y-3">
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">3 document uploads per month</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Basic AI course generation</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm font-semibold text-orange-600">Up to 10 learners per course</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm font-semibold text-orange-600">Up to 3 published courses</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Basic analytics</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          {/* Pro Plan */}
-          <Card className="relative border-purple-500 border-2 shadow-lg">
-            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-              <Badge className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-                <Sparkles className="h-3 w-3 mr-1" />
+        <div className="p-6">
+          {/* Pro Plan Card */}
+          <Card className="relative border-2 border-blue-500 shadow-xl">
+            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+              <Badge className="bg-blue-500 text-white px-4 py-1 text-sm font-semibold">
                 Most Popular
               </Badge>
             </div>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">Pro</h3>
-                  <p className="text-2xl font-bold mt-1">$29<span className="text-sm font-normal text-gray-600">/month</span></p>
+            <CardContent className="p-8">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold">Pro</h3>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold">$29</span>
+                  <span className="text-gray-600">/month</span>
                 </div>
               </div>
               
-              <ul className="space-y-3">
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm font-semibold">Unlimited document uploads</span>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-center gap-3">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <span className="text-gray-700">Unlimited document uploads</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Advanced AI course generation</span>
+                <li className="flex items-center gap-3">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <span className="text-gray-700">Advanced AI course generation</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm font-semibold text-purple-600">Unlimited learners</span>
+                <li className="flex items-center gap-3">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <span className="text-gray-700">Unlimited learners</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm font-semibold text-purple-600">Unlimited courses</span>
+                <li className="flex items-center gap-3">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <span className="text-gray-700">Unlimited courses</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Advanced analytics & insights</span>
+                <li className="flex items-center gap-3">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <span className="text-gray-700">Advanced analytics & insights</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Priority support</span>
+                <li className="flex items-center gap-3">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <span className="text-gray-700">Priority support</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Custom branding</span>
+                <li className="flex items-center gap-3">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <span className="text-gray-700">Custom branding</span>
                 </li>
               </ul>
 
               <Button 
                 onClick={handleUpgrade}
-                className="w-full mt-6 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3"
+                size="lg"
               >
-                Upgrade to Pro
+                Start Pro Trial
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Need more? Check out our{" "}
+        <div className="px-6 pb-6">
+          <div className="text-center">
             <button 
-              onClick={() => setLocation('/pricing')}
-              className="text-purple-600 hover:underline font-medium"
+              onClick={onClose}
+              className="text-sm text-gray-600 hover:text-gray-800 underline"
             >
-              Enterprise plan
+              Continue with Free plan limitations
             </button>
-            {" "}for custom solutions
-          </p>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
