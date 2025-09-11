@@ -23,6 +23,8 @@ export default function UpgradePopup({
   feature 
 }: UpgradePopupProps) {
   const [, setLocation] = useLocation();
+  
+  console.log('UpgradePopup component - isOpen:', isOpen, 'reason:', reason);
 
   const handleUpgrade = () => {
     // Navigate to pricing page or payment flow

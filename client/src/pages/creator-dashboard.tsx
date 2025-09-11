@@ -123,13 +123,19 @@ export default function CreatorDashboard() {
       setLocation(`/courses/${course.id}/edit`);
     },
     onError: (error: any) => {
+      console.log('Create course error:', error);
+      console.log('Error has requiresUpgrade?', error.requiresUpgrade);
+      console.log('Current showUpgradePopup state before:', showUpgradePopup);
+      
       if (error.requiresUpgrade) {
+        console.log('Setting upgrade popup to show');
         setUpgradeReason(error.message);
         setSubscriptionLimits({ 
           currentUsage: error.coursesCreated, 
           limit: error.limit 
         });
         setShowUpgradePopup(true);
+        console.log('Upgrade popup should now be showing');
       } else {
         toast({
           title: "Failed to create course",
@@ -252,7 +258,19 @@ export default function CreatorDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      <CreateCourseDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
+      <CreateCourseDialog 
+        open={showCreateDialog} 
+        onOpenChange={setShowCreateDialog}
+        onUpgradeRequired={(error) => {
+          console.log('Upgrade required from CreateCourseDialog:', error);
+          setUpgradeReason(error.message);
+          setSubscriptionLimits({ 
+            currentUsage: error.coursesCreated, 
+            limit: error.limit 
+          });
+          setShowUpgradePopup(true);
+        }}
+      />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -261,15 +279,31 @@ export default function CreatorDashboard() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Creator Dashboard</h1>
             <p className="text-gray-600">Welcome back, {user?.firstName || 'Creator'}! Manage your courses and track performance.</p>
           </div>
-          <Button 
-            size="lg" 
-            className="mt-4 lg:mt-0"
-            onClick={handleCreateCourse}
-            disabled={createCourseMutation.isPending}
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Create New Course
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              size="lg" 
+              className="mt-4 lg:mt-0"
+              onClick={handleCreateCourse}
+              disabled={createCourseMutation.isPending}
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Create New Course
+            </Button>
+            <Button 
+              size="sm" 
+              variant="destructive"
+              className="mt-4 lg:mt-0"
+              onClick={() => {
+                console.log('TEST: Manually triggering upgrade popup');
+                setUpgradeReason("Free tier users can only publish up to 3 courses. Upgrade to Pro for unlimited courses.");
+                setSubscriptionLimits({ currentUsage: 4, limit: 3 });
+                setShowUpgradePopup(true);
+                console.log('TEST: showUpgradePopup should now be true');
+              }}
+            >
+              Test Popup
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
