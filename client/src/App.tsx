@@ -15,6 +15,7 @@ import LearnerAnalytics from "@/pages/learner-analytics";
 import LearnerProfile from "@/pages/learner-profile";
 import LearnerSettings from "@/pages/learner-settings";
 import LearnerHelp from "@/pages/learner-help";
+import CreatorAnalytics from "@/pages/creator-analytics";
 
 function Router() {
   return (
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/login" component={LoginPage} />
       <Route path="/select-role" component={RoleSelection} />
       <Route path="/creator" component={CreatorDashboard} />
+      <Route path="/analytics" component={CreatorAnalytics} />
       <Route path="/learner" component={LearnerDashboard} />
       <Route path="/learner/analytics" component={LearnerAnalytics} />
       <Route path="/learner/profile" component={LearnerProfile} />

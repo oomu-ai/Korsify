@@ -102,8 +102,8 @@ export default function Navigation() {
     {
       label: 'Analytics',
       icon: BarChart3,
-      action: () => setLocation(user.currentRole === 'creator' ? '/analytics' : '/learner/analytics'),
-      showFor: ['learner', 'creator']
+      action: () => setLocation('/analytics'),
+      showFor: ['creator']
     },
   ].filter(item => !item.showFor || item.showFor.includes(user.currentRole || 'learner')) : [];
 
@@ -215,21 +215,6 @@ export default function Navigation() {
                         <span>{item.label}</span>
                       </DropdownMenuItem>
                     ))}
-                    
-                    <DropdownMenuSeparator />
-                    
-                    <DropdownMenuItem onClick={() => setLocation(user.currentRole === 'creator' ? '/creator/profile' : '/learner/profile')}>
-                      <UserIcon className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLocation(user.currentRole === 'creator' ? '/creator/settings' : '/learner/settings')}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLocation(user.currentRole === 'creator' ? '/creator/help' : '/learner/help')}>
-                      <HelpCircle className="mr-2 h-4 w-4" />
-                      <span>Help</span>
-                    </DropdownMenuItem>
                     
                     <DropdownMenuSeparator />
                     
