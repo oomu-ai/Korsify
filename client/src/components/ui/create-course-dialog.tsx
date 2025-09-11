@@ -66,6 +66,8 @@ export default function CreateCourseDialog({ open, onOpenChange, onUpgradeRequir
       
       // Check if there was an error
       if (!courseResponse.ok) {
+        console.log('Course creation failed, response:', course);
+        console.log('requiresUpgrade flag:', course.requiresUpgrade);
         throw course;
       }
 
