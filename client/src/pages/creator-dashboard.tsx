@@ -144,23 +144,37 @@ export default function CreatorDashboard() {
   const generateCourseMutation = useMutation({
     mutationFn: async (documentId: string) => {
       const response = await apiRequest("POST", "/api/courses/generate", { documentId });
-      return response.json();
+      const data = await response.json();
+      if (!response.ok) {
+        throw data;
+      }
+      return data;
     },
-    onSuccess: (course) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription"] });
       toast({
         title: "Course generated successfully!",
         description: "Your AI-powered course is ready to edit.",
       });
       // Navigate to course editor
-      setLocation(`/courses/${course.id}/edit`);
+      setLocation(`/courses/${data.courseId}/edit`);
     },
-    onError: (error) => {
-      toast({
-        title: "Failed to generate course",
-        description: error.message || "Could not generate course from document",
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      if (error.requiresUpgrade) {
+        setUpgradeReason(error.message);
+        setSubscriptionLimits({ 
+          currentUsage: error.coursesCreated, 
+          limit: error.limit 
+        });
+        setShowUpgradePopup(true);
+      } else {
+        toast({
+          title: "Failed to generate course",
+          description: error.message || "Could not generate course from document",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -247,30 +261,15 @@ export default function CreatorDashboard() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Creator Dashboard</h1>
             <p className="text-gray-600">Welcome back, {user?.firstName || 'Creator'}! Manage your courses and track performance.</p>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              size="lg" 
-              className="mt-4 lg:mt-0"
-              onClick={handleCreateCourse}
-              disabled={createCourseMutation.isPending}
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Create New Course
-            </Button>
-            {/* Test Button - Click to verify popup */}
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="mt-4 lg:mt-0"
-              onClick={() => {
-                setUpgradeReason("Free tier users can only publish up to 3 courses. Upgrade to Pro for unlimited courses.");
-                setSubscriptionLimits({ currentUsage: 4, limit: 3 });
-                setShowUpgradePopup(true);
-              }}
-            >
-              Test Upgrade Popup
-            </Button>
-          </div>
+          <Button 
+            size="lg" 
+            className="mt-4 lg:mt-0"
+            onClick={handleCreateCourse}
+            disabled={createCourseMutation.isPending}
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Create New Course
+          </Button>
         </div>
 
         {/* Stats Cards */}
