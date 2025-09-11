@@ -51,6 +51,9 @@ export const users = pgTable("users", {
   appleId: varchar("apple_id").unique(),
   linkedinId: varchar("linkedin_id").unique(),
   authProvider: varchar("auth_provider", { enum: ['local', 'google', 'apple', 'linkedin'] }).default('local'),
+  subscriptionTier: varchar("subscription_tier", { enum: ['free', 'pro', 'enterprise'] }).default('free'),
+  subscriptionStartDate: timestamp("subscription_start_date"),
+  subscriptionEndDate: timestamp("subscription_end_date"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

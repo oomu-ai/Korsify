@@ -20,7 +20,8 @@ import ProgressIndicator from "@/components/ui/progress-indicator";
 import CourseCard from "@/components/ui/course-card";
 import TemplateGallery from "@/components/ui/template-gallery";
 import CreateCourseDialog from "@/components/ui/create-course-dialog";
-import { apiRequest } from "@/lib/queryClient";
+import UpgradePopup from "@/components/upgrade-popup";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import type { User, Course, Document } from "@shared/schema";
@@ -42,12 +43,14 @@ import {
 export default function CreatorDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [uploadingFile, setUploadingFile] = useState<File | null>(null);
   const [processingJobId, setProcessingJobId] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState("");
+  const [subscriptionLimits, setSubscriptionLimits] = useState<any>(null);
 
   // Fetch user data
   const { data: user } = useQuery<User>({
@@ -69,6 +72,12 @@ export default function CreatorDashboard() {
     queryKey: ['/api/analytics/creator'],
     enabled: !!user?.id,
     refetchInterval: 30000 // Refetch every 30 seconds
+  });
+
+  // Fetch subscription info
+  const { data: subscriptionInfo } = useQuery({
+    queryKey: ['/api/subscription'],
+    enabled: !!user?.id
   });
 
   // Upload document mutation
@@ -101,19 +110,33 @@ export default function CreatorDashboard() {
   const createCourseMutation = useMutation({
     mutationFn: async (courseData: { title: string; description: string; tags?: string[] }) => {
       const response = await apiRequest("POST", "/api/courses", courseData);
-      return response.json();
+      const data = await response.json();
+      if (!response.ok) {
+        throw data;
+      }
+      return data;
     },
     onSuccess: (course) => {
       queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription"] });
       // Navigate to course editor
       setLocation(`/courses/${course.id}/edit`);
     },
-    onError: (error) => {
-      toast({
-        title: "Failed to create course",
-        description: error.message || "Could not create course",
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      if (error.requiresUpgrade) {
+        setUpgradeReason(error.message);
+        setSubscriptionLimits({ 
+          currentUsage: error.coursesCreated, 
+          limit: error.limit 
+        });
+        setShowUpgradePopup(true);
+      } else {
+        toast({
+          title: "Failed to create course",
+          description: error.message || "Could not create course",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -394,6 +417,16 @@ export default function CreatorDashboard() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Upgrade Popup */}
+        <UpgradePopup
+          isOpen={showUpgradePopup}
+          onClose={() => setShowUpgradePopup(false)}
+          reason={upgradeReason}
+          currentLimit={subscriptionLimits?.limit}
+          currentUsage={subscriptionLimits?.currentUsage}
+          feature="courses"
+        />
       </div>
     </div>
   );

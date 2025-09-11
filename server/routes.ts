@@ -296,6 +296,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user subscription info
+  app.get('/api/subscription', async (req: any, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const subscriptionInfo = await storage.getUserSubscriptionInfo(req.user.id);
+      res.json(subscriptionInfo);
+    } catch (error) {
+      console.error("Error fetching subscription info:", error);
+      res.status(500).json({ message: "Failed to fetch subscription info" });
+    }
+  });
+
   // Course routes
   app.get('/api/courses', async (req: any, res) => {
     try {
@@ -373,6 +388,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/courses', async (req: any, res) => {
     try {
+      // Check if user can create a course (subscription limits)
+      const canCreate = await storage.canCreateCourse(req.user.id);
+      if (!canCreate.allowed) {
+        return res.status(403).json({ 
+          message: canCreate.reason,
+          requiresUpgrade: true,
+          coursesCreated: canCreate.coursesCreated,
+          limit: canCreate.limit
+        });
+      }
+
       const courseData = insertCourseSchema.parse({
         title: req.body.title || "New Course",
         description: req.body.description || "",

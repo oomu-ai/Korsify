@@ -574,7 +574,11 @@ export default function Landing() {
                     </li>
                     <li className="flex items-center gap-3">
                       <CheckCircle className="w-5 h-5 text-green-500" />
-                      <span>Up to 50 learners per course</span>
+                      <span>Up to 10 learners per course</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <span>Up to 3 published courses</span>
                     </li>
                     <li className="flex items-center gap-3">
                       <CheckCircle className="w-5 h-5 text-green-500" />
@@ -612,6 +616,10 @@ export default function Landing() {
                     <li className="flex items-center gap-3">
                       <CheckCircle className="w-5 h-5 text-green-500" />
                       <span>Unlimited learners</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <span>Unlimited courses</span>
                     </li>
                     <li className="flex items-center gap-3">
                       <CheckCircle className="w-5 h-5 text-green-500" />

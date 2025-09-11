@@ -349,6 +349,103 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(courses).where(eq(courses.creatorId, userId)).orderBy(desc(courses.createdAt));
   }
 
+  // Subscription limit checking methods
+  async canCreateCourse(userId: string): Promise<{ allowed: boolean; reason?: string; coursesCreated?: number; limit?: number }> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      return { allowed: false, reason: 'User not found' };
+    }
+
+    // Pro and enterprise users have unlimited courses
+    if (user.subscriptionTier === 'pro' || user.subscriptionTier === 'enterprise') {
+      return { allowed: true };
+    }
+
+    // Free users can only create 3 courses
+    const userCourses = await this.getUserCourses(userId);
+    const publishedCourses = userCourses.filter(c => c.status === 'published').length;
+    
+    if (publishedCourses >= 3) {
+      return { 
+        allowed: false, 
+        reason: 'Free tier users can only publish up to 3 courses. Upgrade to Pro for unlimited courses.',
+        coursesCreated: publishedCourses,
+        limit: 3
+      };
+    }
+
+    return { allowed: true, coursesCreated: publishedCourses, limit: 3 };
+  }
+
+  async canEnrollStudent(courseId: string): Promise<{ allowed: boolean; reason?: string; studentsEnrolled?: number; limit?: number }> {
+    const course = await this.getCourse(courseId);
+    if (!course) {
+      return { allowed: false, reason: 'Course not found' };
+    }
+
+    const creator = await this.getUser(course.creatorId);
+    if (!creator) {
+      return { allowed: false, reason: 'Course creator not found' };
+    }
+
+    // Pro and enterprise users have unlimited students
+    if (creator.subscriptionTier === 'pro' || creator.subscriptionTier === 'enterprise') {
+      return { allowed: true };
+    }
+
+    // Free users can only have 10 students per course
+    const courseEnrollments = await db.select()
+      .from(enrollments)
+      .where(eq(enrollments.courseId, courseId));
+    
+    const studentCount = courseEnrollments.length;
+
+    if (studentCount >= 10) {
+      return { 
+        allowed: false, 
+        reason: 'Free tier courses are limited to 10 students. Course creator needs to upgrade to Pro for unlimited students.',
+        studentsEnrolled: studentCount,
+        limit: 10
+      };
+    }
+
+    return { allowed: true, studentsEnrolled: studentCount, limit: 10 };
+  }
+
+  async getUserSubscriptionInfo(userId: string): Promise<{
+    tier: 'free' | 'pro' | 'enterprise';
+    coursesCreated: number;
+    courseLimit: number | null;
+    totalStudents: number;
+    studentLimitPerCourse: number | null;
+  }> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const tier = user.subscriptionTier || 'free';
+    const userCourses = await this.getUserCourses(userId);
+    const publishedCourses = userCourses.filter(c => c.status === 'published').length;
+
+    // Count total students across all courses
+    let totalStudents = 0;
+    for (const course of userCourses) {
+      const courseEnrollments = await db.select()
+        .from(enrollments)
+        .where(eq(enrollments.courseId, course.id));
+      totalStudents += courseEnrollments.length;
+    }
+
+    return {
+      tier,
+      coursesCreated: publishedCourses,
+      courseLimit: tier === 'free' ? 3 : null,
+      totalStudents,
+      studentLimitPerCourse: tier === 'free' ? 10 : null
+    };
+  }
+
   async getPublishedCourses(): Promise<Course[]> {
     // Returns ALL published courses from ALL users on the entire platform
     // No user filtering - this is for the global course catalog
