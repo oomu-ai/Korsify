@@ -1,12 +1,49 @@
 import express, { type Request, Response, NextFunction } from "express";
 import path from "path";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { runMigrations } from "./migrate.js";
 import { runDeploymentMigrations } from "./deployMigrate.js";
 import { validateEnvironment } from "./env-check.js";
+import { configLoader } from "./services/configLoader.js";
 
 const app = express();
+
+// CORS configuration for external access
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // In production, you might want to restrict this to specific domains
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5000',
+      'http://localhost:5173',
+      // Add your production domains here
+      process.env.FRONTEND_URL,
+      process.env.ALLOWED_ORIGINS?.split(',')
+    ].filter(Boolean).flat();
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // For development, allow all origins
+      if (process.env.NODE_ENV === 'development') {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+};
+
+app.use(cors(corsOptions));
+
 // Increase payload size limit to 100MB for large file uploads
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: false }));
@@ -42,9 +79,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Validate environment variables
+  // Validate environment variables and load configuration
   try {
-    validateEnvironment();
+    await validateEnvironment();
   } catch (error) {
     log(`Environment validation failed: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);

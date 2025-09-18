@@ -5,7 +5,9 @@ import { storage } from "./storage";
 import type { User } from "@shared/schema";
 
 // JWT secret - auto-generated in production
-const JWT_SECRET = process.env.JWT_SECRET || "development-jwt-secret-" + Math.random().toString(36);
+import { configLoader } from "./services/configLoader.js";
+
+const JWT_SECRET = configLoader.get('JWT_SECRET') || process.env.JWT_SECRET || "development-jwt-secret-" + Math.random().toString(36);
 const JWT_EXPIRES_IN = "7d";
 
 export interface AuthRequest extends Request {

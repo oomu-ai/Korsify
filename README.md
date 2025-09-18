@@ -28,6 +28,10 @@ Korsify is a comprehensive learning management system that leverages AI to autom
 - **Real-time Updates**: WebSocket support for live progress tracking
 - **Database**: PostgreSQL with Drizzle ORM
 - **Deployment Ready**: Optimized for Google Cloud Platform deployment
+- **Secrets Management**: Automatic GCP Secrets Manager integration
+- **CORS Support**: Configurable cross-origin resource sharing
+- **Health Checks**: Built-in health monitoring endpoints
+- **Containerized**: Docker support with multi-stage builds
 
 ## 🛠️ Tech Stack
 
@@ -152,7 +156,26 @@ korsify-app/
 - Docker installed
 - GCP project with billing enabled
 
-### Quick Deployment (35 minutes)
+### Automated Deployment (Recommended)
+
+Use the provided deployment script for a complete setup:
+
+```bash
+# Make the script executable
+chmod +x deploy-gcp.sh
+
+# Run the deployment script
+./deploy-gcp.sh
+```
+
+This script will:
+- Enable required GCP APIs
+- Create Cloud SQL instance and database
+- Set up Cloud Storage bucket
+- Create secrets in Secret Manager
+- Build and deploy to Cloud Run
+
+### Manual Deployment (35 minutes)
 
 #### Step 1: GCP Project Setup
 ```bash
@@ -191,15 +214,21 @@ gsutil iam ch allUsers:objectViewer gs://korsify-documents/public/
 
 #### Step 4: Secrets Management
 ```bash
-# Create secrets
-echo -n "postgresql://user:pass@/korsify?host=/cloudsql/$PROJECT_ID:us-central1:korsify-db" | \
-  gcloud secrets create database-url --data-file=-
+# Required secrets
+gcloud secrets create database-url --data-file=- <<< "postgresql://user:pass@/korsify?host=/cloudsql/PROJECT_ID:us-central1:korsify-db"
+gcloud secrets create gemini-api-key --data-file=- <<< "your-gemini-api-key"
+gcloud secrets create jwt-secret --data-file=- <<< "your-jwt-secret"
 
-echo -n "your-gemini-api-key" | \
-  gcloud secrets create gemini-api-key --data-file=-
+# Optional OAuth secrets
+gcloud secrets create google-client-id --data-file=- <<< "your-google-client-id"
+gcloud secrets create google-client-secret --data-file=- <<< "your-google-client-secret"
+gcloud secrets create apple-client-id --data-file=- <<< "your-apple-client-id"
+gcloud secrets create apple-client-secret --data-file=- <<< "your-apple-client-secret"
+gcloud secrets create linkedin-client-id --data-file=- <<< "your-linkedin-client-id"
+gcloud secrets create linkedin-client-secret --data-file=- <<< "your-linkedin-client-secret"
 
-echo -n "your-jwt-secret" | \
-  gcloud secrets create jwt-secret --data-file=-
+# Storage
+gcloud secrets create gcs-bucket-name --data-file=- <<< "korsify-documents"
 ```
 
 #### Step 5: Build and Deploy
